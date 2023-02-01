@@ -104,6 +104,85 @@ XDR标准提供了在网络传输中表示数据类型的通用方法，NFS协�
 NFS协议被设计成无状态的，这样做的目的在上面的章节中已经阐述过了，不再赘述。
 
 **2. NFS PROTOCOL DEFINITION**
+> The protocol definition is given as a set of procedures with arguments and results defined using the RPC language. A brief description of the function of each procedure should provide enough information to allow implementation.
+
+完整NFS协议的描述由一组用RPC语言表达的接口程序（procedures）给出。简要描述上述接口足以指导协议的实现。
+
+> All of the procedures in the NFS protocol are assumed to be synchronous. When a procedure returns to the client, the client can assume that the operation has completed and any data associated with the request is now on stable storage.
+
+NFS协议中的所有接口都应该是同步的。NFSv2中所有的接口情况如下所示，只要稍微有点文件系统经验的人都能明白这些操作的含义。
+
+```c
+// 空操作
+void
+NFSPROC_NULL(void) = 0;
+
+// 获取文件的attr
+attrstat
+NFSPROC_GETATTR(fhandle) = 1;
+
+// 设置文件attr
+struct sattrargs {
+    fhandle file;
+    sattr attributes;
+}
+
+attrstat
+NFSPROC_SETATTR(sattrargs) = 2;
+
+// 已被废弃
+void
+NFSPROC_ROOT(void) = 3;
+
+diropres
+NFSPROC_LOOKUP(diropargs) = 4;
+
+readlinkres
+NFSPROC_READLINK(fhandle) = 5;
+
+readres
+NFSPROC_READ(readargs) = 6;
+
+void
+NFSPROC_WRITECACHE(void) = 7;
+
+attrstat
+NFSPROC_WRITE(writeargs) = 8;
+
+diropres
+NFSPROC_CREATE(createargs) = 9;
+
+stat
+NFSPROC_REMOVE(diropargs) = 10;
+
+stat
+NFSPROC_RENAME(renameargs) = 11;
+
+stat
+NFSPROC_LINK(linkargs) = 12;
+
+stat
+NFSPROC_SYMLINK(symlinkargs) = 13;
+
+diropres
+NFSPROC_MKDIR(createargs) = 14;
+
+stat
+NFSPROC_RMDIR(diropargs) = 15;
+
+readdirres
+NFSPROC_READDIR(readdirargs) = 16;
+
+statfsres
+NFSPROC_STATFS(fhandle) = 17;
+```
+
+
+
+
+
+
+
 
 **3. NFS IMPLEMENTATION ISSUE**
 
