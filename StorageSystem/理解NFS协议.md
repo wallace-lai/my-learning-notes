@@ -177,12 +177,128 @@ statfsres
 NFSPROC_STATFS(fhandle) = 17;
 ```
 
+**Basic Data Types**
 
+```c
+enum stat {
+    NFS_OK = 0,
+    NFSERR_PERM = 1,
+    NFSERR_NOENT = 2,
+    NFSERR_IO = 5,
+    NFSERR_NXIO = 6,            // No such device or address
+    NFSERR_ACCES = 13,          // Permission denied
+    NFSERR_EXIST = 17,
+    NFSERR_NODEV = 19,          // No such devie
+    NFSERR_NOTDIR = 20,
+    NFSERR_ISDIR = 21,
+    NFSERR_FBIG = 27,           // File too large
+    NFSERR_NOSPC = 28,
+    NFSERR_ROFS = 30,
+    NFSERR_NAMETOOLONG = 63,
+    NFSERR_NOTEMPTY = 66,
+    NFSERR_DQUOT = 69,          // Disk quota exceeded
+    NFSERR_STALE = 70,          // The fhandle given in the arguments was invalid
+    NFSERR_WFLUSH = 99
+};
+```
+stat是每个接口的返回状态集合
 
+```c
+enum ftype {
+    NFNON = 0,  // a non-file
+    NFREG = 1,  // regular file
+    NFDIR = 2,  // directory
+    NFBLK = 3,  // block-special device
+    NFCHR = 4,  // character-special device
+    NFLNK = 5   // symbolic link
+};
+```
+ftype表示文件类型
 
+```c
+typedef opaque fhandle[FHSIZE];
+```
+> The "fhandle" is the file handle passed between the server and the client. All file operations are done using file handles to refer to a file or directory. The file handle can contain whatever information the server needs to distinguish an individual file.
 
+fhandle指的是文件句柄，用于在客户端和服务端之间标识唯一的文件。我理解因为NFS是无状态的协议，所以fhandle里必须保存能够找到该文件所需的全量信息（比如：文件系统ID + 文件路径之类的）。即使是fhandle因为服务器奔溃丢失了也没关系，客户端再lookup一下将fhandle生成就行了。
 
+```c
+struct timeval {
+    unsigned int seconds;
+    unsigned int useconds;
+};
+```
+timeval用于传递时间信息，它表示从1970年1月1日零时起经过的秒和毫秒（是毫秒还是纳秒？）数
 
+```c
+struct fattr {
+    ftype        type;
+    unsigned int mode;
+    unsigned int nlink;
+    unsigned int uid;
+    unsigned int gid;
+    unsigned int size;
+    unsigned int blocksize;
+    unsigned int rdev;
+    unsigned int blocks;
+    unsigned int fsid;
+    unsigned int fileid;
+    timeval      atime;
+    timeval      mtime;
+    timeval      ctime;
+};
+```
+fattr结构体用于存储文件属性，对此我有个疑问——扩展属性xattr在哪里？或许是因为NFSv2提出的年代太早了，那时候的文件系统根本不支持文件扩展属性吧
+
+```c
+struct sattr {
+    unsigned int mode;
+    unsigned int uid;
+    unsigned int gid;
+    unsigned int size;
+    timeval      atime;
+    timeval      mtime;
+};
+```
+sattr表示客户端允许设置的文件属性字段，字段含义和fattr中字段含义相同
+
+```c
+typedef string filename<MAXNAMELEN>;
+```
+filename用于传递文件名
+
+```c
+typedef string path<MAXPATHLEN>;
+```
+path表示文件路径
+
+```c
+union attrstat switch (stat status) {
+    case NFS_OK:
+        fattr attributes;
+    default:
+        void;
+};
+```
+
+```c
+struct diropargs {
+    fhandle dir;
+    filename name;
+};
+```
+
+```c
+union diropres switch (stat status) {
+    case NFS_OK:
+        struct {
+            fhandle file;
+            fattr attributes;
+        } diropok;
+    default:
+        void;
+};
+```
 
 **3. NFS IMPLEMENTATION ISSUE**
 
